@@ -1,0 +1,22 @@
+{
+    "version": "2.0.0",
+    "port": 8200,
+    "heartbeat_interval_seconds": 300,
+    "heartbeat_enabled": true,
+    "voice": {
+        "wake_word": "cyra",
+        "wake_word_enabled": false,
+        "voice_en": "en-US-AriaNeural",
+        "voice_ro": "ro-RO-AlinaNeural"
+    },
+    "vision": {
+        "enabled": true,
+        "camera_index": 0,
+        "width": 320,
+        "height": 240
+    },
+    "privacy": {
+        "mask_api_key": true,
+        "log_conversations": true
+    }
+}

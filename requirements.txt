@@ -1,0 +1,13 @@
+litellm
+fastapi
+uvicorn
+sqlite-vec
+sentence-transformers
+pydantic-settings
+edge-tts
+opencv-python
+numpy
+SpeechRecognition
+python-dotenv
+Pillow
+pyautogui

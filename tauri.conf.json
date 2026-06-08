@@ -1,0 +1,46 @@
+{
+  "productName": "Cyra-OS",
+  "version": "2.0.0",
+  "identifier": "com.embro-os.cyra",
+  "build": {
+    "frontendDist": "../ui",
+    "devUrl": "http://localhost:8200",
+    "beforeDevCommand": "",
+    "beforeBuildCommand": ""
+  },
+  "app": {
+    "title": "Cyra-OS v2",
+    "windows": [
+      {
+        "title": "Cyra-OS",
+        "width": 1400,
+        "height": 900,
+        "minWidth": 1000,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    },
+    "trayIcon": {
+      "iconPath": "icons/tray.png",
+      "tooltip": "Cyra-OS v2",
+      "menu": [
+        { "label": "Open Dashboard", "action": "open" },
+        { "label": "Quit", "action": "quit" }
+      ]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/icon.ico"
+    ]
+  },
+  "plugins": {}
+}

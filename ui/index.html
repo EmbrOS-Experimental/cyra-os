@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyra-OS v2 | Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap');
+
+        :root {
+            --bg: #0a0a0a;
+            --sidebar: #111111;
+            --border: #222222;
+            --accent: #ffffff;
+            --text-muted: #888888;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr 340px;
+            height: 100vh;
+            gap: 1px;
+            background-color: var(--border);
+        }
+
+        .panel {
+            background-color: var(--bg);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar { background-color: var(--sidebar); }
+
+        .chat-input-container {
+            padding: 20px;
+            border-top: 1px solid var(--border);
+            background-color: var(--bg);
+        }
+
+        .chat-input {
+            width: 100%;
+            background-color: #161616;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .chat-input:focus {
+            border-color: #444;
+            background-color: #1a1a1a;
+        }
+
+        .message {
+            padding: 24px 40px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+
+        .message.user { background-color: rgba(255,255,255,0.02); }
+        .message:hover { background-color: rgba(255,255,255,0.01); }
+
+        .message-content {
+            max-width: 850px;
+            margin: 0 auto;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+
+        .xray-stream {
+            padding: 12px;
+            font-family: 'Geist Mono', monospace;
+            font-size: 11px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .stream-entry {
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #1a1a1a;
+            opacity: 0.8;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 0.8; transform: translateX(0); } }
+
+        .tag {
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            margin-right: 8px;
+            font-weight: 600;
+        }
+
+        .tag.thinking { color: #a78bfa; background: rgba(167, 139, 250, 0.1); border: 1px solid rgba(167, 139, 250, 0.2); }
+        .tag.tool { color: #34d399; background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.2); }
+        .tag.tool_output { color: #6ee7b7; background: rgba(110, 231, 183, 0.05); border: 1px solid rgba(110, 231, 183, 0.1); }
+        .tag.hearing { color: #60a5fa; background: rgba(96, 165, 250, 0.1); border: 1px solid rgba(96, 165, 250, 0.2); }
+        .tag.speaking { color: #fbbf24; background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.2); }
+        .tag.system { color: #facc15; background: rgba(250, 204, 21, 0.1); border: 1px solid rgba(250, 204, 21, 0.2); }
+        .tag.error { color: #f87171; background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.2); }
+
+        .control-btn {
+            background: #1a1a1a;
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #ccc;
+        }
+
+        .control-btn:hover { background: #252525; border-color: #444; }
+        .control-btn.active { background: rgba(255,255,255,0.1); border-color: #fff; color: #fff; }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-online { background: #34d399; box-shadow: 0 0 10px rgba(52, 211, 153, 0.4); }
+        .status-offline { background: #666; }
+
+        .typing-indicator {
+            display: inline-flex;
+            gap: 3px;
+            padding: 8px 0;
+        }
+        .typing-indicator span {
+            width: 6px;
+            height: 6px;
+            background: #666;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-6px); }
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+        select, input[type="password"], input[type="number"] {
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="workspace-grid">
+        <!-- Column 1: System Config -->
+        <div class="panel sidebar">
+            <div class="panel-header">
+                Hardware Control
+                <span class="text-[9px] opacity-40">v2.0.0</span>
+            </div>
+            <div class="p-6 space-y-6 overflow-y-auto flex-1">
+                <!-- Voice / Mic Control -->
+                <div>
+                    <div class="text-[10px] text-muted-foreground uppercase tracking-widest mb-3 opacity-50 font-bold">Audio Interface</div>
+                    <div class="space-y-2">
+                        <button id="btn-mic" class="control-btn w-full justify-between" onclick="toggleMic()">
+                            <span>🎤 Microphone (STT)</span>
+                            <span id="status-mic" class="text-[10px] opacity-40">OFF</span>
+                        </button>
+                        <button id="btn-wake" class="control-btn w-full justify-between" onclick="toggleWake()">
+                            <span>👂 Wake Word "Cyra"</span>
+                            <span id="status-wake" class="text-[10px] opacity-40">OFF</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Avatar -->
+                <div>
+                    <div class="text-[10px] text-muted-foreground uppercase tracking-widest mb-3 opacity-50 font-bold">Avatar</div>
+                    <div class="flex justify-center">
+                        <div id="avatar-display" class="w-24 h-24 rounded-full bg-[#111] border border-white/10 flex items-center justify-center overflow-hidden">
+                            <span class="text-[10px] opacity-20">CYRA</span>
+                        </div>
+                    </div>
+                    <div id="avatar-expression" class="text-center text-[9px] opacity-30 mt-2">neutral</div>
+                </div>
+
+                <!-- Vision Feed -->
+                <div>
+                    <div class="text-[10px] text-muted-foreground uppercase tracking-widest mb-3 opacity-50 font-bold">Vision Sensor</div>
+                    <div class="relative w-full aspect-video bg-black/60 rounded-xl border border-white/5 overflow-hidden group">
+                        <img id="webcam-feed" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" src="">
+                        <div class="absolute top-3 left-3 flex items-center bg-black/60 backdrop-blur-md px-2 py-1 rounded text-[9px] font-mono tracking-tighter border border-white/10">
+                            <span id="vision-dot" class="status-dot status-offline"></span>
+                            <span id="vision-label">NO FEED</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Heartbeat -->
+                <div>
+                    <div class="text-[10px] text-muted-foreground uppercase tracking-widest mb-3 opacity-50 font-bold">Heartbeat</div>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] opacity-40">Status</span>
+                            <span id="heartbeat-status" class="text-[10px] opacity-40">OFF</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] opacity-40">Interval (sec)</span>
+                            <input type="number" id="heartbeat-interval" value="300" min="30" max="3600"
+                                class="w-20 bg-[#161616] border border-white/5 rounded px-2 py-1 text-xs text-right outline-none focus:border-white/20"
+                                onchange="updateHeartbeat()">
+                        </div>
+                        <button class="control-btn w-full justify-center" onclick="triggerHeartbeat()">
+                            ⚡ Trigger Now
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Model Info -->
+                <div>
+                    <div class="text-[10px] text-muted-foreground uppercase tracking-widest mb-3 opacity-50 font-bold">Neural Engine</div>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-[10px] opacity-30 block mb-1">Model</label>
+                            <select id="model-select" class="w-full bg-[#161616] border border-white/5 rounded px-2 py-1.5 text-xs outline-none focus:border-white/20" onchange="updateConfig()"></select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] opacity-30 block mb-1">API Key</label>
+                            <div class="flex gap-2">
+                                <input type="password" id="api-key-input" class="flex-1 bg-[#161616] border border-white/5 rounded px-2 py-1.5 text-xs outline-none focus:border-white/20" placeholder="sk-or-v1-...">
+                                <button class="bg-white/5 hover:bg-white/10 border border-white/10 px-2 rounded text-[10px]" onclick="updateConfig()">Save</button>
+                            </div>
+                            <span id="key-status" class="text-[9px] opacity-20 mt-1 block"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skills -->
+                <div>
+                    <div class="text-[10px] text-muted-foreground uppercase tracking-widest mb-3 opacity-50 font-bold">Loaded Modules</div>
+                    <div id="skill-list" class="space-y-1 font-mono text-[10px] text-white/40"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Column 2: Chat -->
+        <div class="panel">
+            <div class="panel-header">
+                Workspace
+                <div class="flex gap-4">
+                    <button class="text-[10px] opacity-40 hover:opacity-100 transition-opacity" onclick="clearChat()">Clear</button>
+                </div>
+            </div>
+            <div id="chat-messages" class="flex-1 overflow-y-auto">
+                <div class="message">
+                    <div class="message-content text-white/30 italic text-sm">
+                        Cyra-OS v2 initialized. Awaiting input.
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input-container">
+                <form id="chat-form" class="relative">
+                    <input type="text" id="user-input" class="chat-input pr-24" placeholder="Send a message or command..." autocomplete="off">
+                    <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                        <kbd class="text-[10px] opacity-20 bg-white/10 px-1.5 py-0.5 rounded border border-white/10">ENTER</kbd>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Column 3: Telemetry -->
+        <div class="panel">
+            <div class="panel-header">System Telemetry</div>
+            <div id="stream-container" class="xray-stream"></div>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const streamContainer = document.getElementById('stream-container');
+        let currentAssistantMsg = null;
+
+        // ── Telemetry Stream (SSE) ─────────────────────────────────────────
+        const eventSource = new EventSource('/stream');
+        eventSource.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                const entry = document.createElement('div');
+                entry.className = 'stream-entry';
+
+                const typeLabels = {
+                    'thinking': 'THINKING',
+                    'tool': 'SKILL_EXEC',
+                    'tool_output': 'SKILL_OUT',
+                    'hearing': 'VOICE_IN',
+                    'speaking': 'VOICE_OUT',
+                    'system': 'SYS_LOG',
+                    'error': 'FAIL_CORE'
+                };
+
+                entry.innerHTML = `
+                    <div class="flex items-center mb-1">
+                        <span class="tag ${data.type}">${typeLabels[data.type] || data.type}</span>
+                        <span class="text-[9px] font-mono opacity-20 ml-auto">${data.timestamp}</span>
+                    </div>
+                    <div class="text-white/70 leading-relaxed">${escapeHtml(data.text)}</div>
+                `;
+
+                streamContainer.appendChild(entry);
+                streamContainer.scrollTop = streamContainer.scrollHeight;
+            } catch (e) {}
+        };
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ── Chat ───────────────────────────────────────────────────────────
+        function addMessage(text, role) {
+            const msg = document.createElement('div');
+            msg.className = `message ${role}`;
+            msg.innerHTML = `
+                <div class="message-content">
+                    <div class="text-[10px] uppercase tracking-widest opacity-20 mb-2 font-bold">${role}</div>
+                    <div class="${role === 'assistant' ? 'text-white/90' : 'text-white/80'}">${escapeHtml(text)}</div>
+                </div>
+            `;
+            chatMessages.appendChild(msg);
+            chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+            return msg;
+        }
+
+        function addTypingIndicator() {
+            const msg = document.createElement('div');
+            msg.className = 'message assistant';
+            msg.id = 'typing-msg';
+            msg.innerHTML = `
+                <div class="message-content">
+                    <div class="text-[10px] uppercase tracking-widest opacity-20 mb-2 font-bold">assistant</div>
+                    <div class="typing-indicator"><span></span><span></span><span></span></div>
+                </div>
+            `;
+            chatMessages.appendChild(msg);
+            chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+            return msg;
+        }
+
+        function removeTypingIndicator() {
+            const el = document.getElementById('typing-msg');
+            if (el) el.remove();
+        }
+
+        chatForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            userInput.value = '';
+            addMessage(text, 'user');
+            addTypingIndicator();
+
+            try {
+                // Use streaming endpoint
+                const response = await fetch('/chat/stream', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let fullText = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                if (data.token) {
+                                    fullText += data.token;
+                                    removeTypingIndicator();
+                                    if (!currentAssistantMsg) {
+                                        currentAssistantMsg = addMessage(fullText, 'assistant');
+                                    } else {
+                                        const contentDiv = currentAssistantMsg.querySelector('.message-content > div:last-child');
+                                        if (contentDiv) contentDiv.textContent = fullText;
+                                    }
+                                    chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+                                }
+                                if (data.error) {
+                                    removeTypingIndicator();
+                                    addMessage('Error: ' + data.error, 'assistant');
+                                }
+                                if (data.done) {
+                                    currentAssistantMsg = null;
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                }
+            } catch (err) {
+                removeTypingIndicator();
+                addMessage('Connection error: ' + err.message, 'assistant');
+            }
+        };
+
+        function clearChat() {
+            chatMessages.innerHTML = '<div class="message"><div class="message-content text-white/30 italic text-sm">Session cleared.</div></div>';
+        }
+
+        // ── Hardware Controls ──────────────────────────────────────────────
+        async function toggleMic() {
+            const btn = document.getElementById('btn-mic');
+            const status = document.getElementById('status-mic');
+            const isActive = btn.classList.contains('active');
+
+            const res = await fetch('/settings/audio', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: isActive ? 'stop_listening' : 'start_listening' })
+            });
+            const data = await res.json();
+
+            if (data.listening) {
+                btn.classList.add('active');
+                status.textContent = 'ACTIVE';
+                status.classList.remove('opacity-40');
+                status.classList.add('text-blue-400');
+            } else {
+                btn.classList.remove('active');
+                status.textContent = 'OFF';
+                status.classList.add('opacity-40');
+                status.classList.remove('text-blue-400');
+            }
+        }
+
+        async function toggleWake() {
+            const btn = document.getElementById('btn-wake');
+            const status = document.getElementById('status-wake');
+
+            const res = await fetch('/settings/audio', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'toggle_wake_word' })
+            });
+            const data = await res.json();
+
+            if (data.wake_word) {
+                btn.classList.add('active');
+                status.textContent = 'ACTIVE';
+                status.classList.remove('opacity-40');
+                status.classList.add('text-green-400');
+            } else {
+                btn.classList.remove('active');
+                status.textContent = 'OFF';
+                status.classList.add('opacity-40');
+                status.classList.remove('text-green-400');
+            }
+        }
+
+        // ── Heartbeat ──────────────────────────────────────────────────────
+        async function updateHeartbeat() {
+            const interval = document.getElementById('heartbeat-interval').value;
+            await fetch('/settings/heartbeat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ interval: parseInt(interval) })
+            });
+        }
+
+        async function triggerHeartbeat() {
+            await fetch('/settings/heartbeat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'trigger_now' })
+            });
+        }
+
+        // ── State Polling ──────────────────────────────────────────────────
+        async function fetchState() {
+            try {
+                const res = await fetch('/state');
+                const data = await res.json();
+
+                // Models
+                const modelSelect = document.getElementById('model-select');
+                modelSelect.innerHTML = data.available_models.map(m =>
+                    `<option value="${m.id}" ${data.model === m.id ? 'selected' : ''}>${m.name}</option>`
+                ).join('');
+
+                // API Key
+                if (data.api_key) {
+                    document.getElementById('key-status').textContent = `Stored: ${data.api_key}`;
+                }
+
+                // Skills
+                const skillList = document.getElementById('skill-list');
+                skillList.innerHTML = data.skills.map(s => `<div><span class="text-white/20 mr-2">/</span> ${s}</div>`).join('');
+
+                // Audio
+                if (data.audio.listening) {
+                    document.getElementById('btn-mic').classList.add('active');
+                    document.getElementById('status-mic').textContent = 'ACTIVE';
+                    document.getElementById('status-mic').classList.add('text-blue-400');
+                }
+                if (data.audio.wake_word) {
+                    document.getElementById('btn-wake').classList.add('active');
+                    document.getElementById('status-wake').textContent = 'ACTIVE';
+                    document.getElementById('status-wake').classList.add('text-green-400');
+                }
+
+                // Vision
+                if (data.vision && data.vision.running) {
+                    document.getElementById('vision-dot').className = 'status-dot status-online';
+                    document.getElementById('vision-label').textContent = 'LIVE';
+                }
+
+                // Heartbeat
+                if (data.heartbeat) {
+                    document.getElementById('heartbeat-status').textContent = data.heartbeat.running ? 'ACTIVE' : 'OFF';
+                    document.getElementById('heartbeat-status').className = data.heartbeat.running ? 'text-[10px] text-green-400' : 'text-[10px] opacity-40';
+                    if (data.heartbeat.interval) {
+                        document.getElementById('heartbeat-interval').value = data.heartbeat.interval;
+                    }
+                }
+            } catch (e) {}
+        }
+        fetchState();
+        setInterval(fetchState, 10000);
+
+        // ── Webcam Polling ─────────────────────────────────────────────────
+        const webcamImg = document.getElementById('webcam-feed');
+        setInterval(async () => {
+            try {
+                const res = await fetch('/webcam');
+                const data = await res.json();
+                if (data.frame) {
+                    webcamImg.src = 'data:image/jpeg;base64,' + data.frame;
+                }
+                if (data.status) {
+                    const dot = document.getElementById('vision-dot');
+                    const label = document.getElementById('vision-label');
+                    if (data.status.running) {
+                        dot.className = 'status-dot status-online';
+                        label.textContent = data.status.face_visible ? 'FACE DETECTED' : 'LIVE';
+                    } else {
+                        dot.className = 'status-dot status-offline';
+                        label.textContent = 'NO FEED';
+                    }
+                }
+            } catch (err) {}
+        }, 200);
+
+        // ── Avatar ────────────────────────────────────────────────────────
+        let currentExpression = 'neutral';
+        const avatarStates = ['neutral', 'thinking', 'listening', 'speaking', 'happy'];
+        
+        function setAvatar(expression) {
+            currentExpression = expression;
+            const display = document.getElementById('avatar-display');
+            const label = document.getElementById('avatar-expression');
+            if (label) label.textContent = expression;
+            // Generate SVG face
+            display.innerHTML = getAvatarSvg(expression);
+        }
+
+        function getAvatarSvg(expr) {
+            const eyes = {
+                neutral: '<circle cx="35" cy="40" r="5" fill="white"/><circle cx="65" cy="40" r="5" fill="white"/>',
+                thinking: '<circle cx="35" cy="38" r="5" fill="white"/><circle cx="65" cy="38" r="5" fill="white"/><circle cx="35" cy="36" r="2" fill="#0a0a0a"/><circle cx="65" cy="36" r="2" fill="#0a0a0a"/>',
+                listening: '<circle cx="35" cy="40" r="5" fill="white"/><circle cx="65" cy="40" r="5" fill="white"/>',
+                speaking: '<circle cx="35" cy="40" r="5" fill="white"/><circle cx="65" cy="40" r="5" fill="white"/>',
+                happy: '<circle cx="35" cy="40" r="5" fill="white"/><circle cx="65" cy="40" r="5" fill="white"/>',
+            };
+            const mouths = {
+                neutral: '<line x1="40" y1="65" x2="60" y2="65" stroke="white" stroke-width="2"/>',
+                thinking: '<line x1="42" y1="67" x2="58" y2="67" stroke="white" stroke-width="2"/>',
+                listening: '<line x1="45" y1="65" x2="55" y2="65" stroke="white" stroke-width="2"/>',
+                speaking: '<ellipse cx="50" cy="67" rx="8" ry="5" fill="white" opacity="0.8"><animate attributeName="ry" values="3;6;3" dur="0.3s" repeatCount="indefinite"/></ellipse>',
+                happy: '<path d="M 40 65 Q 50 75 60 65" stroke="white" stroke-width="2" fill="none"/>',
+            };
+            const brows = {
+                neutral: '<line x1="28" y1="30" x2="42" y2="30" stroke="white" stroke-width="1.5"/><line x1="58" y1="30" x2="72" y2="30" stroke="white" stroke-width="1.5"/>',
+                thinking: '<line x1="28" y1="28" x2="42" y2="26" stroke="white" stroke-width="1.5"/><line x1="58" y1="26" x2="72" y2="28" stroke="white" stroke-width="1.5"/>',
+                listening: '<line x1="28" y1="30" x2="42" y2="30" stroke="white" stroke-width="1.5"/><line x1="58" y1="30" x2="72" y2="30" stroke="white" stroke-width="1.5"/>',
+                speaking: '<line x1="28" y1="30" x2="42" y2="30" stroke="white" stroke-width="1.5"/><line x1="58" y1="30" x2="72" y2="30" stroke="white" stroke-width="1.5"/>',
+                happy: '<line x1="28" y1="28" x2="42" y2="26" stroke="white" stroke-width="1.5"/><line x1="58" y1="26" x2="72" y2="28" stroke="white" stroke-width="1.5"/>',
+            };
+            return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100" width="100%" height="100%">
+                <circle cx="50" cy="50" r="48" fill="#111" stroke="#333" stroke-width="2"/>
+                ${eyes[expr] || eyes.neutral}
+                ${brows[expr] || brows.neutral}
+                ${mouths[expr] || mouths.neutral}
+            </svg>`;
+        }
+
+        // React to telemetry for avatar changes
+        const origHandler = eventSource.onmessage;
+        eventSource.onmessage = (event) => {
+            origHandler(event);
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'thinking') setAvatar('thinking');
+                else if (data.type === 'hearing') setAvatar('listening');
+                else if (data.type === 'speaking') setAvatar('speaking');
+                else if (data.type === 'tool_output') setAvatar('happy');
+            } catch (e) {}
+        };
+    </script>
+</body>
+</html>
